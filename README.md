@@ -1,8 +1,16 @@
 # expo-ui-alert-45700-repro
 
-Wanted to use a SwiftUI Alert from `@expo/ui/swift-ui` on iOS but the package ships `ConfirmationDialog` (action sheet) and `BottomSheet` and no `Alert`. The fix was sitting half-staged in the expo monorepo: `apps/native-component-list/src/screens/UI/AlertDialogScreen.ios.tsx` was a "Not implemented yet on iOS" placeholder paired with a working Android `AlertDialogScreen.android.tsx` rendering `AlertDialog` from `@expo/ui/jetpack-compose`. Filed the iOS half as [`expo/expo#45700`](https://github.com/expo/expo/pull/45700). This repo is the runnable consumer-side repro: fresh `create-expo-app@canary` with the patched `@expo/ui` installed via a local tarball, twelve test cards on the home screen exercising every Alert edge case.
+Wanted to use a SwiftUI Alert from `@expo/ui/swift-ui` on iOS but the package ships `ConfirmationDialog` (action sheet) and `BottomSheet` and no `Alert`. The fix was sitting half-staged in the expo monorepo: `apps/native-component-list/src/screens/UI/AlertDialogScreen.ios.tsx` was a "Not implemented yet on iOS" placeholder paired with a working Android `AlertDialogScreen.android.tsx` rendering `AlertDialog` from `@expo/ui/jetpack-compose`. Filed the iOS half as [`expo/expo#45700`](https://github.com/expo/expo/pull/45700). This repo is the runnable consumer-side repro: fresh `create-expo-app@canary` with the patched `@expo/ui` installed locally, twelve test cards on the home screen exercising every Alert edge case.
 
 The patch mirrors `ConfirmationDialog` (#43366) byte-for-byte minus `titleVisibility`, so anything that already works with `ConfirmationDialog` works the same way here.
+
+| Basic flow | Destructive role | Title only |
+|---|---|---|
+| ![basic](screenshots/basic.png) | ![destructive](screenshots/destructive.png) | ![title only](screenshots/title-only.png) |
+
+| Long title (~200 chars) | Empty title | Home screen |
+|---|---|---|
+| ![long title](screenshots/long-title.png) | ![empty title](screenshots/empty-title.png) | ![home](screenshots/home.png) |
 
 ## Run
 
@@ -47,9 +55,9 @@ These need simulator settings changes, not just in-app interaction.
 
 - `expo` `56.0.0-canary-20260506-03817f5` (or any later canary)
 - `react` `19.2.3`, `react-native` `0.85.3`
-- `@expo/ui` `56.0.5` from `./expo-ui-56.0.5.tgz` (the patched tarball)
+- `@expo/ui` `56.0.5` from the patched build at `./expo-ui-56.0.5.tgz`
 
-The tarball is the build output of the [PR #45700](https://github.com/expo/expo/pull/45700) branch (`feat/expo-ui-swift-ui-alert`) running `pnpm build` then `npm pack` in `packages/expo-ui`. `package.json` references it via `"@expo/ui": "file:./expo-ui-56.0.5.tgz"`, so `bun install` extracts it fresh on every install.
+`package.json` references the patched build via `"@expo/ui": "file:./expo-ui-56.0.5.tgz"`. `bun install` picks it up on every install.
 
 ## What the patch changes
 
@@ -62,7 +70,7 @@ The tarball is the build output of the [PR #45700](https://github.com/expo/expo/
 - `apps/native-component-list/src/screens/UI/AlertDialogScreen.ios.tsx` replacing the "Not implemented yet" placeholder with the same four variants you see in this repro
 - Module registration in `ios/ExpoUIModule.swift`, export from `src/swift-ui/index.tsx`, gdad mapping in `tools/src/commands/GenerateDocsAPIData.ts`, CHANGELOG entry
 
-Rebuilding the tarball from the PR branch:
+Rebuilding the patched `@expo/ui` from the PR branch:
 
 ```bash
 git clone https://github.com/expo/expo.git
