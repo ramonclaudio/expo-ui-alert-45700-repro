@@ -1,5 +1,5 @@
 {
-  "name": "expo-ui-alert-repro",
+  "name": "expo-ui-alert-45700-repro",
   "main": "index.ts",
   "version": "1.0.0",
   "description": "Minimal Expo SDK 56 canary repro for the SwiftUI Alert component proposed in expo/expo PR #45700.",

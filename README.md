@@ -1,4 +1,4 @@
-# expo-ui-alert-repro
+# expo-ui-alert-45700-repro
 
 Wanted to use a SwiftUI Alert from `@expo/ui/swift-ui` on iOS but the package ships `ConfirmationDialog` (action sheet) and `BottomSheet` and no `Alert`. The fix was sitting half-staged in the expo monorepo: `apps/native-component-list/src/screens/UI/AlertDialogScreen.ios.tsx` was a "Not implemented yet on iOS" placeholder paired with a working Android `AlertDialogScreen.android.tsx` rendering `AlertDialog` from `@expo/ui/jetpack-compose`. Filed the iOS half as [`expo/expo#45700`](https://github.com/expo/expo/pull/45700). This repo is the runnable consumer-side repro: fresh `create-expo-app@canary` with the patched `@expo/ui` installed via a local tarball, twelve test cards on the home screen exercising every Alert edge case.
 
