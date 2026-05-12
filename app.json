@@ -1,0 +1,33 @@
+{
+  "expo": {
+    "name": "Alert Repro",
+    "slug": "expo-ui-alert-repro",
+    "version": "1.0.0",
+    "orientation": "default",
+    "icon": "./assets/icon.png",
+    "userInterfaceStyle": "automatic",
+    "newArchEnabled": true,
+    "splash": {
+      "image": "./assets/splash-icon.png",
+      "resizeMode": "contain",
+      "backgroundColor": "#ffffff"
+    },
+    "ios": {
+      "bundleIdentifier": "com.example.expouialertrepro",
+      "supportsTablet": true
+    },
+    "android": {
+      "package": "com.example.expouialertrepro",
+      "adaptiveIcon": {
+        "foregroundImage": "./assets/adaptive-icon.png",
+        "backgroundColor": "#ffffff"
+      },
+      "edgeToEdgeEnabled": true,
+      "predictiveBackGestureEnabled": false
+    },
+    "plugins": ["expo-dev-client"],
+    "web": {
+      "favicon": "./assets/favicon.png"
+    }
+  }
+}

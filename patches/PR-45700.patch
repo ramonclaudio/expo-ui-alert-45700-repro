@@ -1,0 +1,828 @@
+From 92071cefb517d0f4550116146a56987d562be2da Mon Sep 17 00:00:00 2001
+From: Ray <hello@ramonclaudio.com>
+Date: Sat, 2 May 2026 14:46:31 -0400
+Subject: [PATCH] [iOS][ui] Add SwiftUI Alert component
+
+Wraps SwiftUI's .alert(_:isPresented:actions:message:) modifier with the same Trigger / Actions / Message slot model used by ConfirmationDialog. Replaces the existing AlertDialogScreen.ios.tsx 'Not implemented yet' placeholder with a working demo and registers it in UIScreen.ios.tsx.
+---
+ .../src/screens/UI/AlertDialogScreen.ios.tsx  | 128 +++++++++++++-
+ .../src/screens/UI/UIScreen.ios.tsx           |   8 +
+ .../unversioned/sdk/ui/swift-ui/alert.mdx     | 164 ++++++++++++++++++
+ .../v55.0.0/sdk/ui/swift-ui/alert.mdx         | 164 ++++++++++++++++++
+ .../unversioned/expo-ui/swift-ui/alert.json   |   1 +
+ .../data/v55.0.0/expo-ui/swift-ui/alert.json  |   1 +
+ packages/expo-ui/CHANGELOG.md                 |   1 +
+ .../expo-ui/build/swift-ui/Alert/index.d.ts   | Bin 0 -> 1720 bytes
+ .../build/swift-ui/Alert/index.d.ts.map       | Bin 0 -> 763 bytes
+ packages/expo-ui/build/swift-ui/index.d.ts    | Bin 1673 -> 1698 bytes
+ .../expo-ui/build/swift-ui/index.d.ts.map     | Bin 1359 -> 1380 bytes
+ packages/expo-ui/ios/Alert/AlertProps.swift   |  10 ++
+ packages/expo-ui/ios/Alert/AlertView.swift    |  58 +++++++
+ packages/expo-ui/ios/ExpoUIModule.swift       |   1 +
+ packages/expo-ui/src/swift-ui/Alert/index.tsx |  85 +++++++++
+ packages/expo-ui/src/swift-ui/index.tsx       |   1 +
+ tools/src/commands/GenerateDocsAPIData.ts     |   1 +
+ 17 files changed, 616 insertions(+), 7 deletions(-)
+ create mode 100644 docs/pages/versions/unversioned/sdk/ui/swift-ui/alert.mdx
+ create mode 100644 docs/pages/versions/v55.0.0/sdk/ui/swift-ui/alert.mdx
+ create mode 100644 docs/public/static/data/unversioned/expo-ui/swift-ui/alert.json
+ create mode 100644 docs/public/static/data/v55.0.0/expo-ui/swift-ui/alert.json
+ create mode 100644 packages/expo-ui/build/swift-ui/Alert/index.d.ts
+ create mode 100644 packages/expo-ui/build/swift-ui/Alert/index.d.ts.map
+ create mode 100644 packages/expo-ui/ios/Alert/AlertProps.swift
+ create mode 100644 packages/expo-ui/ios/Alert/AlertView.swift
+ create mode 100644 packages/expo-ui/src/swift-ui/Alert/index.tsx
+
+diff --git a/apps/native-component-list/src/screens/UI/AlertDialogScreen.ios.tsx b/apps/native-component-list/src/screens/UI/AlertDialogScreen.ios.tsx
+index ea3b64a9437..0db274001d4 100644
+--- a/apps/native-component-list/src/screens/UI/AlertDialogScreen.ios.tsx
++++ b/apps/native-component-list/src/screens/UI/AlertDialogScreen.ios.tsx
+@@ -1,13 +1,127 @@
+-import * as React from 'react';
+-import { ScrollView, Text, View } from 'react-native';
++import { Alert, Button, Form, Host, Section, Text } from '@expo/ui/swift-ui';
++import { foregroundStyle } from '@expo/ui/swift-ui/modifiers';
++import React, { useState } from 'react';
+ 
+ export default function AlertDialogScreen() {
++  const [showBasic, setShowBasic] = useState(false);
++  const [showDestructive, setShowDestructive] = useState(false);
++  const [showWithMessage, setShowWithMessage] = useState(false);
++  const [showTitleOnly, setShowTitleOnly] = useState(false);
++  const [lastAction, setLastAction] = useState<string>('None');
++
+   return (
+-    <ScrollView style={{ flex: 1 }}>
+-      <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}>
+-        <Text style={{ textAlign: 'center' }}>Not implemented yet on iOS</Text>
+-      </View>
+-    </ScrollView>
++    <Host style={{ flex: 1 }}>
++      <Form>
++        <Section title="Last Action">
++          <Text modifiers={[foregroundStyle('secondaryLabel')]}>{lastAction}</Text>
++        </Section>
++
++        <Section title="Basic">
++          <Alert
++            title="Sign out?"
++            isPresented={showBasic}
++            onIsPresentedChange={setShowBasic}>
++            <Alert.Trigger>
++              <Button label="Show Basic Alert" onPress={() => setShowBasic(true)} />
++            </Alert.Trigger>
++            <Alert.Actions>
++              <Button
++                label="Sign Out"
++                onPress={() => {
++                  setLastAction('Basic: Signed out');
++                  setShowBasic(false);
++                }}
++              />
++              <Button label="Cancel" role="cancel" />
++            </Alert.Actions>
++            <Alert.Message>
++              <Text>You will need to sign in again to access your account.</Text>
++            </Alert.Message>
++          </Alert>
++        </Section>
++
++        <Section title="Destructive Action">
++          <Alert
++            title="Delete Account?"
++            isPresented={showDestructive}
++            onIsPresentedChange={setShowDestructive}>
++            <Alert.Trigger>
++              <Button
++                label="Delete Account"
++                role="destructive"
++                onPress={() => setShowDestructive(true)}
++              />
++            </Alert.Trigger>
++            <Alert.Actions>
++              <Button
++                label="Delete"
++                role="destructive"
++                onPress={() => {
++                  setLastAction('Destructive: Deleted');
++                  setShowDestructive(false);
++                }}
++              />
++              <Button label="Cancel" role="cancel" />
++            </Alert.Actions>
++            <Alert.Message>
++              <Text>This permanently deletes your account and all data. This cannot be undone.</Text>
++            </Alert.Message>
++          </Alert>
++        </Section>
++
++        <Section title="With Multiple Actions">
++          <Alert
++            title="Save Changes?"
++            isPresented={showWithMessage}
++            onIsPresentedChange={setShowWithMessage}>
++            <Alert.Trigger>
++              <Button label="Close Document" onPress={() => setShowWithMessage(true)} />
++            </Alert.Trigger>
++            <Alert.Actions>
++              <Button
++                label="Save"
++                onPress={() => {
++                  setLastAction('With Message: Saved');
++                  setShowWithMessage(false);
++                }}
++              />
++              <Button
++                label="Discard"
++                role="destructive"
++                onPress={() => {
++                  setLastAction('With Message: Discarded');
++                  setShowWithMessage(false);
++                }}
++              />
++              <Button label="Cancel" role="cancel" />
++            </Alert.Actions>
++            <Alert.Message>
++              <Text>You have unsaved changes. What would you like to do?</Text>
++            </Alert.Message>
++          </Alert>
++        </Section>
++
++        <Section title="Title Only">
++          <Alert
++            title="Saved"
++            isPresented={showTitleOnly}
++            onIsPresentedChange={setShowTitleOnly}>
++            <Alert.Trigger>
++              <Button label="Show Title Only" onPress={() => setShowTitleOnly(true)} />
++            </Alert.Trigger>
++            <Alert.Actions>
++              <Button
++                label="OK"
++                onPress={() => {
++                  setLastAction('Title Only: OK');
++                  setShowTitleOnly(false);
++                }}
++              />
++            </Alert.Actions>
++          </Alert>
++        </Section>
++      </Form>
++    </Host>
+   );
+ }
+ 
+diff --git a/apps/native-component-list/src/screens/UI/UIScreen.ios.tsx b/apps/native-component-list/src/screens/UI/UIScreen.ios.tsx
+index 6f9c2d80194..1a724f7bc12 100644
+--- a/apps/native-component-list/src/screens/UI/UIScreen.ios.tsx
++++ b/apps/native-component-list/src/screens/UI/UIScreen.ios.tsx
+@@ -130,6 +130,14 @@ export const UIScreens = [
+       return optionalRequire(() => require('./MenuScreen'));
+     },
+   },
++  {
++    name: 'AlertDialog component',
++    route: 'ui/alert-dialog',
++    options: {},
++    getComponent() {
++      return optionalRequire(() => require('./AlertDialogScreen'));
++    },
++  },
+   {
+     name: 'ConfirmationDialog component',
+     route: 'ui/confirmation-dialog',
+diff --git a/docs/pages/versions/unversioned/sdk/ui/swift-ui/alert.mdx b/docs/pages/versions/unversioned/sdk/ui/swift-ui/alert.mdx
+new file mode 100644
+index 00000000000..7435c82ca75
+--- /dev/null
++++ b/docs/pages/versions/unversioned/sdk/ui/swift-ui/alert.mdx
+@@ -0,0 +1,164 @@
++---
++title: Alert
++description: A SwiftUI Alert component for presenting native iOS alert dialogs.
++sourceCodeUrl: 'https://github.com/expo/expo/tree/main/packages/expo-ui'
++packageName: '@expo/ui'
++platforms: ['ios', 'tvos', 'expo-go']
++---
++
++import APISection from '~/components/plugins/APISection';
++import { APIInstallSection } from '~/components/plugins/InstallSection';
++
++Expo UI Alert matches the official SwiftUI [alert API](<https://developer.apple.com/documentation/swiftui/view/alert(_:ispresented:actions:message:)>) and presents a native iOS alert dialog with a title, actions, and an optional message.
++
++`Alert` is the centered modal counterpart to [`ConfirmationDialog`](confirmationdialog.mdx), which renders as an action sheet from the bottom of the screen. Both share the same trigger/actions/message slot model so callers can swap between them by changing the component name.
++
++## Installation
++
++<APIInstallSection />
++
++## Usage
++
++### Basic alert
++
++Use `Alert.Trigger` to define the visible element and `Alert.Actions` to provide the dialog buttons.
++
++```tsx BasicAlertExample.tsx
++import { useState } from 'react';
++import { Host, Alert, Button } from '@expo/ui/swift-ui';
++
++export default function BasicAlertExample() {
++  const [isPresented, setIsPresented] = useState(false);
++
++  return (
++    <Host matchContents>
++      <Alert
++        title="Saved"
++        isPresented={isPresented}
++        onIsPresentedChange={setIsPresented}>
++        <Alert.Trigger>
++          <Button label="Show alert" onPress={() => setIsPresented(true)} />
++        </Alert.Trigger>
++        <Alert.Actions>
++          <Button label="OK" onPress={() => setIsPresented(false)} />
++        </Alert.Actions>
++      </Alert>
++    </Host>
++  );
++}
++```
++
++### Cancel and confirm
++
++Combine `role="cancel"` with a confirm button to build a standard yes/no alert.
++
++```tsx CancelConfirmAlertExample.tsx
++import { useState } from 'react';
++import { Host, Alert, Button, Text } from '@expo/ui/swift-ui';
++
++export default function CancelConfirmAlertExample() {
++  const [isPresented, setIsPresented] = useState(false);
++
++  return (
++    <Host matchContents>
++      <Alert
++        title="Sign out?"
++        isPresented={isPresented}
++        onIsPresentedChange={setIsPresented}>
++        <Alert.Trigger>
++          <Button label="Sign out" onPress={() => setIsPresented(true)} />
++        </Alert.Trigger>
++        <Alert.Actions>
++          <Button label="Sign Out" onPress={() => console.log('Signed out')} />
++          <Button label="Cancel" role="cancel" />
++        </Alert.Actions>
++        <Alert.Message>
++          <Text>You will need to sign in again to access your account.</Text>
++        </Alert.Message>
++      </Alert>
++    </Host>
++  );
++}
++```
++
++### Destructive action
++
++Use `role="destructive"` on a `Button` inside `Alert.Actions` to style it as a destructive action.
++
++```tsx DestructiveAlertExample.tsx
++import { useState } from 'react';
++import { Host, Alert, Button, Text } from '@expo/ui/swift-ui';
++
++export default function DestructiveAlertExample() {
++  const [isPresented, setIsPresented] = useState(false);
++
++  return (
++    <Host matchContents>
++      <Alert
++        title="Delete account?"
++        isPresented={isPresented}
++        onIsPresentedChange={setIsPresented}>
++        <Alert.Trigger>
++          <Button label="Delete account" role="destructive" onPress={() => setIsPresented(true)} />
++        </Alert.Trigger>
++        <Alert.Actions>
++          <Button
++            label="Delete"
++            role="destructive"
++            onPress={() => {
++              console.log('Deleted');
++              setIsPresented(false);
++            }}
++          />
++          <Button label="Cancel" role="cancel" />
++        </Alert.Actions>
++        <Alert.Message>
++          <Text>This permanently deletes your account and all data. This cannot be undone.</Text>
++        </Alert.Message>
++      </Alert>
++    </Host>
++  );
++}
++```
++
++### With multiple actions
++
++Stack multiple `Button` components inside `Alert.Actions` to offer more than two choices. SwiftUI arranges them vertically and keeps the `role="cancel"` button at the bottom.
++
++```tsx MultiActionAlertExample.tsx
++import { useState } from 'react';
++import { Host, Alert, Button, Text } from '@expo/ui/swift-ui';
++
++export default function MultiActionAlertExample() {
++  const [isPresented, setIsPresented] = useState(false);
++
++  return (
++    <Host matchContents>
++      <Alert
++        title="Save Changes?"
++        isPresented={isPresented}
++        onIsPresentedChange={setIsPresented}>
++        <Alert.Trigger>
++          <Button label="Close Document" onPress={() => setIsPresented(true)} />
++        </Alert.Trigger>
++        <Alert.Actions>
++          <Button label="Save" onPress={() => console.log('Saved')} />
++          <Button label="Discard" role="destructive" onPress={() => console.log('Discarded')} />
++          <Button label="Cancel" role="cancel" />
++        </Alert.Actions>
++        <Alert.Message>
++          <Text>You have unsaved changes. What would you like to do?</Text>
++        </Alert.Message>
++      </Alert>
++    </Host>
++  );
++}
++```
++
++## API
++
++```tsx
++import { Alert } from '@expo/ui/swift-ui';
++```
++
++<APISection packageName="expo-ui/swift-ui/alert" apiName="Alert" />
+diff --git a/docs/pages/versions/v55.0.0/sdk/ui/swift-ui/alert.mdx b/docs/pages/versions/v55.0.0/sdk/ui/swift-ui/alert.mdx
+new file mode 100644
+index 00000000000..eb685afb5ed
+--- /dev/null
++++ b/docs/pages/versions/v55.0.0/sdk/ui/swift-ui/alert.mdx
+@@ -0,0 +1,164 @@
++---
++title: Alert
++description: A SwiftUI Alert component for presenting native iOS alert dialogs.
++sourceCodeUrl: 'https://github.com/expo/expo/tree/main/packages/expo-ui'
++packageName: '@expo/ui'
++platforms: ['ios', 'tvos']
++---
++
++import APISection from '~/components/plugins/APISection';
++import { APIInstallSection } from '~/components/plugins/InstallSection';
++
++Expo UI Alert matches the official SwiftUI [alert API](<https://developer.apple.com/documentation/swiftui/view/alert(_:ispresented:actions:message:)>) and presents a native iOS alert dialog with a title, actions, and an optional message.
++
++`Alert` is the centered modal counterpart to [`ConfirmationDialog`](confirmationdialog.mdx), which renders as an action sheet from the bottom of the screen. Both share the same trigger/actions/message slot model so callers can swap between them by changing the component name.
++
++## Installation
++
++<APIInstallSection />
++
++## Usage
++
++### Basic alert
++
++Use `Alert.Trigger` to define the visible element and `Alert.Actions` to provide the dialog buttons.
++
++```tsx BasicAlertExample.tsx
++import { useState } from 'react';
++import { Host, Alert, Button } from '@expo/ui/swift-ui';
++
++export default function BasicAlertExample() {
++  const [isPresented, setIsPresented] = useState(false);
++
++  return (
++    <Host matchContents>
++      <Alert
++        title="Saved"
++        isPresented={isPresented}
++        onIsPresentedChange={setIsPresented}>
++        <Alert.Trigger>
++          <Button label="Show alert" onPress={() => setIsPresented(true)} />
++        </Alert.Trigger>
++        <Alert.Actions>
++          <Button label="OK" onPress={() => setIsPresented(false)} />
++        </Alert.Actions>
++      </Alert>
++    </Host>
++  );
++}
++```
++
++### Cancel and confirm
++
++Combine `role="cancel"` with a confirm button to build a standard yes/no alert.
++
++```tsx CancelConfirmAlertExample.tsx
++import { useState } from 'react';
++import { Host, Alert, Button, Text } from '@expo/ui/swift-ui';
++
++export default function CancelConfirmAlertExample() {
++  const [isPresented, setIsPresented] = useState(false);
++
++  return (
++    <Host matchContents>
++      <Alert
++        title="Sign out?"
++        isPresented={isPresented}
++        onIsPresentedChange={setIsPresented}>
++        <Alert.Trigger>
++          <Button label="Sign out" onPress={() => setIsPresented(true)} />
++        </Alert.Trigger>
++        <Alert.Actions>
++          <Button label="Sign Out" onPress={() => console.log('Signed out')} />
++          <Button label="Cancel" role="cancel" />
++        </Alert.Actions>
++        <Alert.Message>
++          <Text>You will need to sign in again to access your account.</Text>
++        </Alert.Message>
++      </Alert>
++    </Host>
++  );
++}
++```
++
++### Destructive action
++
++Use `role="destructive"` on a `Button` inside `Alert.Actions` to style it as a destructive action.
++
++```tsx DestructiveAlertExample.tsx
++import { useState } from 'react';
++import { Host, Alert, Button, Text } from '@expo/ui/swift-ui';
++
++export default function DestructiveAlertExample() {
++  const [isPresented, setIsPresented] = useState(false);
++
++  return (
++    <Host matchContents>
++      <Alert
++        title="Delete account?"
++        isPresented={isPresented}
++        onIsPresentedChange={setIsPresented}>
++        <Alert.Trigger>
++          <Button label="Delete account" role="destructive" onPress={() => setIsPresented(true)} />
++        </Alert.Trigger>
++        <Alert.Actions>
++          <Button
++            label="Delete"
++            role="destructive"
++            onPress={() => {
++              console.log('Deleted');
++              setIsPresented(false);
++            }}
++          />
++          <Button label="Cancel" role="cancel" />
++        </Alert.Actions>
++        <Alert.Message>
++          <Text>This permanently deletes your account and all data. This cannot be undone.</Text>
++        </Alert.Message>
++      </Alert>
++    </Host>
++  );
++}
++```
++
++### With multiple actions
++
++Stack multiple `Button` components inside `Alert.Actions` to offer more than two choices. SwiftUI arranges them vertically and keeps the `role="cancel"` button at the bottom.
++
++```tsx MultiActionAlertExample.tsx
++import { useState } from 'react';
++import { Host, Alert, Button, Text } from '@expo/ui/swift-ui';
++
++export default function MultiActionAlertExample() {
++  const [isPresented, setIsPresented] = useState(false);
++
++  return (
++    <Host matchContents>
++      <Alert
++        title="Save Changes?"
++        isPresented={isPresented}
++        onIsPresentedChange={setIsPresented}>
++        <Alert.Trigger>
++          <Button label="Close Document" onPress={() => setIsPresented(true)} />
++        </Alert.Trigger>
++        <Alert.Actions>
++          <Button label="Save" onPress={() => console.log('Saved')} />
++          <Button label="Discard" role="destructive" onPress={() => console.log('Discarded')} />
++          <Button label="Cancel" role="cancel" />
++        </Alert.Actions>
++        <Alert.Message>
++          <Text>You have unsaved changes. What would you like to do?</Text>
++        </Alert.Message>
++      </Alert>
++    </Host>
++  );
++}
++```
++
++## API
++
++```tsx
++import { Alert } from '@expo/ui/swift-ui';
++```
++
++<APISection packageName="expo-ui/swift-ui/alert" apiName="Alert" />
+diff --git a/docs/public/static/data/unversioned/expo-ui/swift-ui/alert.json b/docs/public/static/data/unversioned/expo-ui/swift-ui/alert.json
+new file mode 100644
+index 00000000000..c789b9f0d65
+--- /dev/null
++++ b/docs/public/static/data/unversioned/expo-ui/swift-ui/alert.json
+@@ -0,0 +1 @@
++{"schemaVersion":"2.0","name":"expo-ui/swift-ui/alert","variant":"project","kind":1,"children":[{"name":"AlertProps","variant":"declaration","kind":2097152,"comment":{"summary":[{"kind":"text","text":"Props of the "},{"kind":"code","text":"`Alert`"},{"kind":"text","text":" component."}]},"type":{"type":"intersection","types":[{"type":"reflection","declaration":{"name":"__type","variant":"declaration","kind":65536,"children":[{"name":"children","variant":"declaration","kind":1024,"comment":{"summary":[{"kind":"text","text":"The contents of the alert.\nShould include "},{"kind":"code","text":"`Alert.Trigger`"},{"kind":"text","text":", "},{"kind":"code","text":"`Alert.Actions`"},{"kind":"text","text":", and optionally "},{"kind":"code","text":"`Alert.Message`"},{"kind":"text","text":"."}]},"type":{"type":"reference","target":{"packageName":"@types/react","packagePath":"index.d.ts","qualifiedName":"React.ReactNode"},"name":"React.ReactNode","package":"@types/react"}},{"name":"isPresented","variant":"declaration","kind":1024,"flags":{"isOptional":true},"comment":{"summary":[{"kind":"text","text":"Whether the alert is presented."}]},"type":{"type":"intrinsic","name":"boolean"}},{"name":"onIsPresentedChange","variant":"declaration","kind":1024,"flags":{"isOptional":true},"comment":{"summary":[{"kind":"text","text":"A callback that is called when the "},{"kind":"code","text":"`isPresented`"},{"kind":"text","text":" state changes."}]},"type":{"type":"reflection","declaration":{"name":"__type","variant":"declaration","kind":65536,"signatures":[{"name":"__type","variant":"signature","kind":4096,"parameters":[{"name":"isPresented","variant":"param","kind":32768,"type":{"type":"intrinsic","name":"boolean"}}],"type":{"type":"intrinsic","name":"void"}}]}}},{"name":"title","variant":"declaration","kind":1024,"comment":{"summary":[{"kind":"text","text":"The title of the alert."}]},"type":{"type":"intrinsic","name":"string"}}]}},{"type":"reference","target":{"packageName":"@expo/ui","packagePath":"src/swift-ui/types.ts","qualifiedName":"CommonViewModifierProps"},"name":"CommonViewModifierProps","package":"@expo/ui"}]}},{"name":"Alert","variant":"declaration","kind":64,"children":[{"name":"Actions","variant":"declaration","kind":1024,"type":{"type":"reflection","declaration":{"name":"__type","variant":"declaration","kind":65536,"signatures":[{"name":"__type","variant":"signature","kind":4096,"comment":{"summary":[{"kind":"text","text":"The action buttons displayed in the alert. Use "},{"kind":"code","text":"`Button`"},{"kind":"text","text":" components from "},{"kind":"code","text":"`@expo/ui/swift-ui`"},{"kind":"text","text":" as children."}]},"parameters":[{"name":"props","variant":"param","kind":32768,"type":{"type":"reflection","declaration":{"name":"__type","variant":"declaration","kind":65536,"children":[{"name":"children","variant":"declaration","kind":1024,"type":{"type":"reference","target":{"packageName":"@types/react","packagePath":"index.d.ts","qualifiedName":"React.ReactNode"},"name":"ReactNode","package":"@types/react","qualifiedName":"React.ReactNode"}}]}}}],"type":{"type":"reference","target":{"packageName":"@types/react","packagePath":"jsx-runtime.d.ts","qualifiedName":"JSX.Element"},"name":"Element","package":"@types/react","qualifiedName":"JSX.Element"}}]}}},{"name":"Message","variant":"declaration","kind":1024,"type":{"type":"reflection","declaration":{"name":"__type","variant":"declaration","kind":65536,"signatures":[{"name":"__type","variant":"signature","kind":4096,"comment":{"summary":[{"kind":"text","text":"An optional message displayed below the title in the alert."}]},"parameters":[{"name":"props","variant":"param","kind":32768,"type":{"type":"reflection","declaration":{"name":"__type","variant":"declaration","kind":65536,"children":[{"name":"children","variant":"declaration","kind":1024,"type":{"type":"reference","target":{"packageName":"@types/react","packagePath":"index.d.ts","qualifiedName":"React.ReactNode"},"name":"ReactNode","package":"@types/react","qualifiedName":"React.ReactNode"}}]}}}],"type":{"type":"reference","target":{"packageName":"@types/react","packagePath":"jsx-runtime.d.ts","qualifiedName":"JSX.Element"},"name":"Element","package":"@types/react","qualifiedName":"JSX.Element"}}]}}},{"name":"Trigger","variant":"declaration","kind":1024,"type":{"type":"reflection","declaration":{"name":"__type","variant":"declaration","kind":65536,"signatures":[{"name":"__type","variant":"signature","kind":4096,"comment":{"summary":[{"kind":"text","text":"The component visible all the time that triggers the alert presentation."}]},"parameters":[{"name":"props","variant":"param","kind":32768,"type":{"type":"reflection","declaration":{"name":"__type","variant":"declaration","kind":65536,"children":[{"name":"children","variant":"declaration","kind":1024,"type":{"type":"reference","target":{"packageName":"@types/react","packagePath":"index.d.ts","qualifiedName":"React.ReactNode"},"name":"ReactNode","package":"@types/react","qualifiedName":"React.ReactNode"}}]}}}],"type":{"type":"reference","target":{"packageName":"@types/react","packagePath":"jsx-runtime.d.ts","qualifiedName":"JSX.Element"},"name":"Element","package":"@types/react","qualifiedName":"JSX.Element"}}]}}}],"signatures":[{"name":"Alert","variant":"signature","kind":4096,"comment":{"summary":[{"kind":"code","text":"`Alert`"},{"kind":"text","text":" presents a SwiftUI alert with a title, optional message, and action buttons."}],"blockTags":[{"tag":"@see","content":[{"kind":"text","text":"https://developer.apple.com/documentation/swiftui/view/alert(_:ispresented:actions:message:)"}]}]},"parameters":[{"name":"props","variant":"param","kind":32768,"type":{"type":"reference","name":"AlertProps","package":"@expo/ui"}}],"type":{"type":"reference","target":{"packageName":"@types/react","packagePath":"jsx-runtime.d.ts","qualifiedName":"JSX.Element"},"name":"Element","package":"@types/react","qualifiedName":"JSX.Element"}}]}],"packageName":"@expo/ui"}
+\ No newline at end of file
+diff --git a/docs/public/static/data/v55.0.0/expo-ui/swift-ui/alert.json b/docs/public/static/data/v55.0.0/expo-ui/swift-ui/alert.json
+new file mode 100644
+index 00000000000..c789b9f0d65
+--- /dev/null
++++ b/docs/public/static/data/v55.0.0/expo-ui/swift-ui/alert.json
+@@ -0,0 +1 @@
++{"schemaVersion":"2.0","name":"expo-ui/swift-ui/alert","variant":"project","kind":1,"children":[{"name":"AlertProps","variant":"declaration","kind":2097152,"comment":{"summary":[{"kind":"text","text":"Props of the "},{"kind":"code","text":"`Alert`"},{"kind":"text","text":" component."}]},"type":{"type":"intersection","types":[{"type":"reflection","declaration":{"name":"__type","variant":"declaration","kind":65536,"children":[{"name":"children","variant":"declaration","kind":1024,"comment":{"summary":[{"kind":"text","text":"The contents of the alert.\nShould include "},{"kind":"code","text":"`Alert.Trigger`"},{"kind":"text","text":", "},{"kind":"code","text":"`Alert.Actions`"},{"kind":"text","text":", and optionally "},{"kind":"code","text":"`Alert.Message`"},{"kind":"text","text":"."}]},"type":{"type":"reference","target":{"packageName":"@types/react","packagePath":"index.d.ts","qualifiedName":"React.ReactNode"},"name":"React.ReactNode","package":"@types/react"}},{"name":"isPresented","variant":"declaration","kind":1024,"flags":{"isOptional":true},"comment":{"summary":[{"kind":"text","text":"Whether the alert is presented."}]},"type":{"type":"intrinsic","name":"boolean"}},{"name":"onIsPresentedChange","variant":"declaration","kind":1024,"flags":{"isOptional":true},"comment":{"summary":[{"kind":"text","text":"A callback that is called when the "},{"kind":"code","text":"`isPresented`"},{"kind":"text","text":" state changes."}]},"type":{"type":"reflection","declaration":{"name":"__type","variant":"declaration","kind":65536,"signatures":[{"name":"__type","variant":"signature","kind":4096,"parameters":[{"name":"isPresented","variant":"param","kind":32768,"type":{"type":"intrinsic","name":"boolean"}}],"type":{"type":"intrinsic","name":"void"}}]}}},{"name":"title","variant":"declaration","kind":1024,"comment":{"summary":[{"kind":"text","text":"The title of the alert."}]},"type":{"type":"intrinsic","name":"string"}}]}},{"type":"reference","target":{"packageName":"@expo/ui","packagePath":"src/swift-ui/types.ts","qualifiedName":"CommonViewModifierProps"},"name":"CommonViewModifierProps","package":"@expo/ui"}]}},{"name":"Alert","variant":"declaration","kind":64,"children":[{"name":"Actions","variant":"declaration","kind":1024,"type":{"type":"reflection","declaration":{"name":"__type","variant":"declaration","kind":65536,"signatures":[{"name":"__type","variant":"signature","kind":4096,"comment":{"summary":[{"kind":"text","text":"The action buttons displayed in the alert. Use "},{"kind":"code","text":"`Button`"},{"kind":"text","text":" components from "},{"kind":"code","text":"`@expo/ui/swift-ui`"},{"kind":"text","text":" as children."}]},"parameters":[{"name":"props","variant":"param","kind":32768,"type":{"type":"reflection","declaration":{"name":"__type","variant":"declaration","kind":65536,"children":[{"name":"children","variant":"declaration","kind":1024,"type":{"type":"reference","target":{"packageName":"@types/react","packagePath":"index.d.ts","qualifiedName":"React.ReactNode"},"name":"ReactNode","package":"@types/react","qualifiedName":"React.ReactNode"}}]}}}],"type":{"type":"reference","target":{"packageName":"@types/react","packagePath":"jsx-runtime.d.ts","qualifiedName":"JSX.Element"},"name":"Element","package":"@types/react","qualifiedName":"JSX.Element"}}]}}},{"name":"Message","variant":"declaration","kind":1024,"type":{"type":"reflection","declaration":{"name":"__type","variant":"declaration","kind":65536,"signatures":[{"name":"__type","variant":"signature","kind":4096,"comment":{"summary":[{"kind":"text","text":"An optional message displayed below the title in the alert."}]},"parameters":[{"name":"props","variant":"param","kind":32768,"type":{"type":"reflection","declaration":{"name":"__type","variant":"declaration","kind":65536,"children":[{"name":"children","variant":"declaration","kind":1024,"type":{"type":"reference","target":{"packageName":"@types/react","packagePath":"index.d.ts","qualifiedName":"React.ReactNode"},"name":"ReactNode","package":"@types/react","qualifiedName":"React.ReactNode"}}]}}}],"type":{"type":"reference","target":{"packageName":"@types/react","packagePath":"jsx-runtime.d.ts","qualifiedName":"JSX.Element"},"name":"Element","package":"@types/react","qualifiedName":"JSX.Element"}}]}}},{"name":"Trigger","variant":"declaration","kind":1024,"type":{"type":"reflection","declaration":{"name":"__type","variant":"declaration","kind":65536,"signatures":[{"name":"__type","variant":"signature","kind":4096,"comment":{"summary":[{"kind":"text","text":"The component visible all the time that triggers the alert presentation."}]},"parameters":[{"name":"props","variant":"param","kind":32768,"type":{"type":"reflection","declaration":{"name":"__type","variant":"declaration","kind":65536,"children":[{"name":"children","variant":"declaration","kind":1024,"type":{"type":"reference","target":{"packageName":"@types/react","packagePath":"index.d.ts","qualifiedName":"React.ReactNode"},"name":"ReactNode","package":"@types/react","qualifiedName":"React.ReactNode"}}]}}}],"type":{"type":"reference","target":{"packageName":"@types/react","packagePath":"jsx-runtime.d.ts","qualifiedName":"JSX.Element"},"name":"Element","package":"@types/react","qualifiedName":"JSX.Element"}}]}}}],"signatures":[{"name":"Alert","variant":"signature","kind":4096,"comment":{"summary":[{"kind":"code","text":"`Alert`"},{"kind":"text","text":" presents a SwiftUI alert with a title, optional message, and action buttons."}],"blockTags":[{"tag":"@see","content":[{"kind":"text","text":"https://developer.apple.com/documentation/swiftui/view/alert(_:ispresented:actions:message:)"}]}]},"parameters":[{"name":"props","variant":"param","kind":32768,"type":{"type":"reference","name":"AlertProps","package":"@expo/ui"}}],"type":{"type":"reference","target":{"packageName":"@types/react","packagePath":"jsx-runtime.d.ts","qualifiedName":"JSX.Element"},"name":"Element","package":"@types/react","qualifiedName":"JSX.Element"}}]}],"packageName":"@expo/ui"}
+\ No newline at end of file
+diff --git a/packages/expo-ui/CHANGELOG.md b/packages/expo-ui/CHANGELOG.md
+index aad5dd2c323..a4e066257c2 100644
+--- a/packages/expo-ui/CHANGELOG.md
++++ b/packages/expo-ui/CHANGELOG.md
+@@ -6,6 +6,7 @@
+ 
+ ### 🎉 New features
+ 
++- [iOS] Added `Alert` component wrapping SwiftUI's `.alert(_:isPresented:actions:message:)` modifier, with `Alert.Trigger`, `Alert.Actions`, and optional `Alert.Message` slots. Mirrors the existing `ConfirmationDialog` shape so it composes the same way with `Button` actions and `isPresented` bindings. ([#45700](https://github.com/expo/expo/pull/45700) by [@ramonclaudio](https://github.com/ramonclaudio))
+ - Added `@expo/ui/community/slider`, a drop-in replacement for `@react-native-community/slider`. ([#45623](https://github.com/expo/expo/pull/45623) by [@nishan](https://github.com/intergalacticspacehighway))
+ 
+ ### 🐛 Bug fixes
+diff --git a/packages/expo-ui/build/swift-ui/Alert/index.d.ts b/packages/expo-ui/build/swift-ui/Alert/index.d.ts
+new file mode 100644
+index 0000000000000000000000000000000000000000..a0fdca2fbe7e20ffd2ae08b22d1814f69a4654d6
+GIT binary patch
+literal 1720
+zcmcIlO>f&U487-95FM~4L2KV#bZb`Z&|w{ler&tVip9j*WXX`^q(zbcUh2bbymSF}
+zXb=R6L_d=6Ju;$cwQ=wW?x96E*G;3<cY*6m&Ba2XxiY%7uz`iq4IE}!?&Iv?$ta&r
+zM=*tWuNUBIgmNa)xDqN&s0x+KC?p@@eaI0qgoyaiDLjsVUIEE}nZhlBR9ZQD)ItJf
+z9+QA##7(U`$w8<}cD&D+-5Rl6qA8D33E8Z2LMuxLOmWby|HY(y=<hGlTDHWp$ISzN
+zRSU@tssgT&RW1vk-!#XQ*9vvQNqn`+h!*Y(u+9jz+(GzJBT;4oZ=ppH7FvUrdPhF2
+zOW3Ra;$s1GttB$GgE)hVTAZ`$4}mi0@%#aDSl6hcKwC&9RmL3gT{E>rJItun#Y@if
+z5J8#8TaQ22F@e($u+oB`j5hH8Ulw{cOq4kJ16IO{Ik8A}h60^vFjh~jc}Z<Jjszuk
+zm=}}EC1-K0Br^z$P6fds*ekhV+<Na8$z^-A-AoD)VGhOz#tWbSw)e-TQ@)ymN%rOD
+zXZBfQL&^-=ph&6&=ACooHQ>Uwl06XLBC;Kw3wM@$`Y8l$jfRaQRi63j$UBkSwOF|0
+zPL#k%xa7orZ6=SuX`3_kJUr0Enc3=dj#96aZhjU9eeV${P2ZbV-tVGh8Vd|=Ji~Vv
+zWH#C;uokYS!!V^sJ6*=bF;v)#L2o#-h)_F6=E`%9D`KHVld-myn9=Ubxvo0zmf+MV
+zED5}#wVH?A<6i}Nr61`cX0b&gxR?a$($;+4;yrc2?_r((kB9$)R*W*Ytim`xX<$~&
+zK$@f?{5#M-4(ZZi+&?}l8F3hu4qu{@=)<UVNUNj&mw4RJjOFjZ>dsVnNu<*Dyu1E-
+PDip{2jAzbf4QrnO6W%<u
+
+literal 0
+HcmV?d00001
+
+diff --git a/packages/expo-ui/build/swift-ui/Alert/index.d.ts.map b/packages/expo-ui/build/swift-ui/Alert/index.d.ts.map
+new file mode 100644
+index 0000000000000000000000000000000000000000..4bd97e380df2befe388d1114106eb61ee224e0e9
+GIT binary patch
+literal 763
+zcmdUtPj7-i5XHaCo~Mwu>BT)g7J|eWVvRAT>A~n~NCXTlYTNX?cbKjJF1<J5u*1Ij
+z&AbO+>R_9;s4F#iCbcPcRt;29t?emT2d-75+PZ62_O-4Z-(2ce4c=4`g#KxpRoEVj
+zjeF>d5Iftr&@)_nQtzayWoi2kK9<Y<zNofbDPRQ3ft(T`p%K^AML-w%7h_;dGhjvr
+zFq$=|SnCu?%4ahqxxb21Ak`VnA<|msNTnFk1en|m=utEUrXI@rN7m;(l+Q!Ih3q3_
+znamgKTg@DpOS|Wag|pDz(Mq;cMmJg+Fa0t@TE%z<WPT+B<6`RFoYN3C&wOF_)qcV3
+zDJ_77=L@E%vJsB+FW=CNOz6oV`HcHu?{fVQ;4yF9hmrmM3r7xP8~Lv%8DG-ye-K->
+N&ghQ_8!IaH{R0B+&GG;M
+
+literal 0
+HcmV?d00001
+
+diff --git a/packages/expo-ui/build/swift-ui/index.d.ts b/packages/expo-ui/build/swift-ui/index.d.ts
+index 5ab269420fa3b861d80bd55adc84c80dffb48968..7647b7ca78e346f04b622821c0316f4af0ea44a9 100644
+GIT binary patch
+delta 19
+acmeC=UBo*fiq$bEwWws`Ly?V9`fLD2at8AN
+
+delta 10
+RcmZ3)+sQj2YGbiJ8vqp<1Bn0t
+
+diff --git a/packages/expo-ui/build/swift-ui/index.d.ts.map b/packages/expo-ui/build/swift-ui/index.d.ts.map
+index 5485de4bc2fd18c2135b17a172cd5f6440248a78..56d63767a57098022f57b6f7d340eaad4fa10cb4 100644
+GIT binary patch
+delta 13
+VcmX@l^@MA}>WNpiHXi6_0RS(J2A2Q;
+
+delta 18
+acmaFDb)IX&>d9^_qLZ&PiEeyV#R33J3<r+@
+
+diff --git a/packages/expo-ui/ios/Alert/AlertProps.swift b/packages/expo-ui/ios/Alert/AlertProps.swift
+new file mode 100644
+index 00000000000..a6ff8312c3e
+--- /dev/null
++++ b/packages/expo-ui/ios/Alert/AlertProps.swift
+@@ -0,0 +1,10 @@
++// Copyright 2025-present 650 Industries. All rights reserved.
++
++import ExpoModulesCore
++import SwiftUI
++
++internal final class AlertProps: UIBaseViewProps {
++  @Field var title: String = ""
++  @Field var isPresented: Bool = false
++  var onIsPresentedChange = EventDispatcher()
++}
+diff --git a/packages/expo-ui/ios/Alert/AlertView.swift b/packages/expo-ui/ios/Alert/AlertView.swift
+new file mode 100644
+index 00000000000..a381c8e0143
+--- /dev/null
++++ b/packages/expo-ui/ios/Alert/AlertView.swift
+@@ -0,0 +1,58 @@
++// Copyright 2025-present 650 Industries. All rights reserved.
++
++import ExpoModulesCore
++import SwiftUI
++
++internal struct AlertView: ExpoSwiftUI.View {
++  @ObservedObject var props: AlertProps
++  @State private var isPresented: Bool = false
++
++  var body: some View {
++    triggerContent
++      .alert(
++        props.title,
++        isPresented: $isPresented
++      ) {
++        actionsContent
++      } message: {
++        messageContent
++      }
++      .onAppear {
++        isPresented = props.isPresented
++      }
++      .onChange(of: isPresented) { newValue in
++        if props.isPresented != newValue {
++          props.onIsPresentedChange(["isPresented": newValue])
++        }
++      }
++      .onChange(of: props.isPresented) { newValue in
++        isPresented = newValue
++      }
++  }
++
++  @ViewBuilder
++  private var triggerContent: some View {
++    if let trigger = props.children?.slot("trigger") {
++      trigger
++    } else {
++      EmptyView()
++        .onAppear {
++          log.warn("Alert requires an Alert.Trigger child to be visible")
++        }
++    }
++  }
++
++  @ViewBuilder
++  private var actionsContent: some View {
++    if let actions = props.children?.slot("actions") {
++      actions
++    }
++  }
++
++  @ViewBuilder
++  private var messageContent: some View {
++    if let message = props.children?.slot("message") {
++      message
++    }
++  }
++}
+diff --git a/packages/expo-ui/ios/ExpoUIModule.swift b/packages/expo-ui/ios/ExpoUIModule.swift
+index f95e75d40a3..16af6edf4f7 100644
+--- a/packages/expo-ui/ios/ExpoUIModule.swift
++++ b/packages/expo-ui/ios/ExpoUIModule.swift
+@@ -91,6 +91,7 @@ public final class ExpoUIModule: Module {
+ 
+     // MARK: - Expo UI Views
+ 
++    ExpoUIView(AlertView.self)
+     ExpoUIView(BottomSheetView.self)
+     ExpoUIView(ExpoUI.Button.self)
+     ExpoUIView(ChartView.self)
+diff --git a/packages/expo-ui/src/swift-ui/Alert/index.tsx b/packages/expo-ui/src/swift-ui/Alert/index.tsx
+new file mode 100644
+index 00000000000..7dc98629b67
+--- /dev/null
++++ b/packages/expo-ui/src/swift-ui/Alert/index.tsx
+@@ -0,0 +1,85 @@
++import { requireNativeView } from 'expo';
++import type { NativeSyntheticEvent } from 'react-native';
++
++import { Slot } from '../SlotView';
++import { createViewModifierEventListener } from '../modifiers/utils';
++import { type CommonViewModifierProps } from '../types';
++
++/**
++ * Props of the `Alert` component.
++ */
++export type AlertProps = {
++  /**
++   * The contents of the alert.
++   * Should include `Alert.Trigger`, `Alert.Actions`, and optionally `Alert.Message`.
++   */
++  children: React.ReactNode;
++  /**
++   * The title of the alert.
++   */
++  title: string;
++  /**
++   * Whether the alert is presented.
++   */
++  isPresented?: boolean;
++  /**
++   * A callback that is called when the `isPresented` state changes.
++   */
++  onIsPresentedChange?: (isPresented: boolean) => void;
++} & CommonViewModifierProps;
++
++type NativeAlertProps = Omit<AlertProps, 'onIsPresentedChange'> & {
++  onIsPresentedChange?: (event: NativeSyntheticEvent<{ isPresented: boolean }>) => void;
++};
++
++const AlertNativeView: React.ComponentType<NativeAlertProps> = requireNativeView(
++  'ExpoUI',
++  'AlertView'
++);
++
++/**
++ * The component visible all the time that triggers the alert presentation.
++ */
++function AlertTrigger(props: { children: React.ReactNode }) {
++  return <Slot name="trigger">{props.children}</Slot>;
++}
++
++/**
++ * The action buttons displayed in the alert. Use `Button` components from `@expo/ui/swift-ui` as children.
++ */
++function AlertActions(props: { children: React.ReactNode }) {
++  return <Slot name="actions">{props.children}</Slot>;
++}
++
++/**
++ * An optional message displayed below the title in the alert.
++ */
++function AlertMessage(props: { children: React.ReactNode }) {
++  return <Slot name="message">{props.children}</Slot>;
++}
++
++Alert.Trigger = AlertTrigger;
++Alert.Actions = AlertActions;
++Alert.Message = AlertMessage;
++
++/**
++ * `Alert` presents a SwiftUI alert with a title, optional message, and action buttons.
++ *
++ * @see https://developer.apple.com/documentation/swiftui/view/alert(_:ispresented:actions:message:)
++ */
++export function Alert(props: AlertProps) {
++  const { onIsPresentedChange, modifiers, children, ...restProps } = props;
++
++  const handleIsPresentedChange = (event: NativeSyntheticEvent<{ isPresented: boolean }>) => {
++    onIsPresentedChange?.(event.nativeEvent.isPresented);
++  };
++
++  return (
++    <AlertNativeView
++      {...(modifiers ? createViewModifierEventListener(modifiers) : undefined)}
++      {...restProps}
++      onIsPresentedChange={handleIsPresentedChange}>
++      {children}
++    </AlertNativeView>
++  );
++}
+diff --git a/packages/expo-ui/src/swift-ui/index.tsx b/packages/expo-ui/src/swift-ui/index.tsx
+index 672ff647425..f3298162362 100644
+--- a/packages/expo-ui/src/swift-ui/index.tsx
++++ b/packages/expo-ui/src/swift-ui/index.tsx
+@@ -1,6 +1,7 @@
+ import '../State/index.fx';
+ 
+ export * from './AccessoryWidgetBackground';
++export * from './Alert';
+ export * from './BottomSheet';
+ export * from './Button';
+ export * from './Chart';
+diff --git a/tools/src/commands/GenerateDocsAPIData.ts b/tools/src/commands/GenerateDocsAPIData.ts
+index 247aedcd336..eb4ed9b9234 100644
+--- a/tools/src/commands/GenerateDocsAPIData.ts
++++ b/tools/src/commands/GenerateDocsAPIData.ts
+@@ -35,6 +35,7 @@ const uiPackagesMapping: Record<string, CommandAdditionalParams> = {
+     'swift-ui/AccessoryWidgetBackground/index.tsx',
+     'expo-ui',
+   ],
++  'expo-ui/swift-ui/alert': ['swift-ui/Alert/index.tsx', 'expo-ui'],
+   'expo-ui/swift-ui/bottomsheet': ['swift-ui/BottomSheet/index.tsx', 'expo-ui'],
+   'expo-ui/swift-ui/button': ['swift-ui/Button/index.tsx', 'expo-ui'],
+   'expo-ui/swift-ui/circularprogress': ['swift-ui/ProgressView/index.tsx', 'expo-ui'],
+-- 
+2.54.0
+
